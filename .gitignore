@@ -2,7 +2,10 @@
 __pycache__/
 *.py[cod]
 *$py.class
-
+/embeddings/
+/data/
+/embeddings/*
+/data/*
 # C extensions
 *.so
 
