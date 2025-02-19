@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     # 3rd party
     "rest_framework",
     "langchain_community",
+    "corsheaders",
     
     # local
     "rag",
@@ -61,13 +62,43 @@ SIMPLE_JWT = {
 
 AUTH_USER_MODEL = "accounts.User"
 
+# 모든 도메인에서의 요청 허용 (개발 환경)
+CORS_ALLOW_ALL_ORIGINS = True
 
+# # 또는 특정 도메인만 허용
+# CORS_ALLOWED_ORIGINS = [
+#     "http://localhost:0",
+#     "http://127.0.0.1:0",
+# ]
+
+# 추가 CORS 설정 (필요한 경우)
+CORS_ALLOW_METHODS = [
+    'DELETE',
+    'GET',
+    'OPTIONS',
+    'PATCH',
+    'POST',
+    'PUT',
+]
+
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+] 
 
 # LangChain
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",

@@ -3,7 +3,20 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.parsers import JSONParser
 from .method import RAGProcessor, RAGQuery
+from dotenv import load_dotenv
+import os
+from tqdm import tqdm
 
+# 환경 변수 로드
+load_dotenv()
+
+# RAGProcessor에서 정의된 경로 사용
+DB_DIR = RAGProcessor.DB_DIR
+CSV_PATTERN = "data/rag/*.csv"
+
+# DB_DIR이 존재하지 않으면 생성
+if not os.path.exists(DB_DIR):
+    os.makedirs(DB_DIR, exist_ok=True)
 
 class RAGSetupView(APIView):
     """
@@ -31,7 +44,7 @@ class RAGSetupView(APIView):
         Process:
             1. CSV 파일 로드 및 전처리
             2. 새로운(미처리) 파일 필터링
-            3. Chroma DB 초기화 또는 로드
+            3. Chroma DB 초기화
             4. 각 CSV 파일별 처리:
                 - 메타데이터와 함께 문서 로드
                 - 새로운 문서 필터링
@@ -47,8 +60,6 @@ class RAGSetupView(APIView):
                 'total_docs': int
             }
         """
-        DB_DIR = "embeddings/chroma_db"
-        CSV_PATTERN = "data/rag/*.csv"
 
         try:
             # 1. CSV 파일 로드
@@ -63,51 +74,12 @@ class RAGSetupView(APIView):
                 }, status=status.HTTP_200_OK)
 
             # 3. Chroma DB 초기화
-            vectorstore, existing_ids = RAGProcessor.initialize_chroma_db(DB_DIR)
-            total_new_docs = 0
-            processed_count = 0
+            vectorstore, existing_ids = RAGProcessor.initialize_chroma_db()
 
-            # 4. 각 CSV 파일 처리
-            for csv_file in new_files:
-                try:
-                    # 4.1. CSV 파일 로드 및 메타데이터 추가
-                    docs = RAGProcessor.load_csv_with_metadata(csv_file)
-                    if not docs:
-                        continue
-
-                    # 4.2. 새 문서 필터링
-                    new_docs = RAGProcessor.filter_new_documents(docs, existing_ids, csv_file)
-                    if not new_docs:
-                        continue
-
-                    # 4.3. 문서 분할
-                    total_new_docs += len(new_docs)
-                    splits = RAGProcessor.split_documents(new_docs)
-                    
-                    # 4.4. 데이터 준비
-                    texts, metadatas, ids = RAGProcessor.prepare_data_for_chroma(splits)
-                    
-                    # 4.5. 임베딩 생성 및 저장
-                    print(f"\n임베딩 생성 중... (총 {len(texts)}개 텍스트)")
-                    embeddings = RAGProcessor.create_embeddings(texts)
-                    
-                    # 4.6. Chroma DB 업데이트
-                    vectorstore = RAGProcessor.update_chroma_db(
-                        vectorstore, 
-                        texts, 
-                        embeddings,  
-                        metadatas, 
-                        ids, 
-                        DB_DIR
-                    )
-                    
-                    # 4.7. 처리 완료 기록
-                    RAGProcessor.save_processed_file_info(csv_file)
-                    processed_count += 1
-
-                except Exception as e:
-                    print(f"파일 처리 중 오류 발생 ({csv_file}): {e}")
-                    continue
+            # 4. 파일 처리 및 DB 업데이트
+            vectorstore, total_new_docs, processed_count = RAGProcessor.process_files(
+                new_files, existing_ids, vectorstore, RAGProcessor.DB_DIR
+            )
 
             # 5. 처리 결과 반환
             if vectorstore:
@@ -125,62 +97,45 @@ class RAGSetupView(APIView):
             }, status=status.HTTP_200_OK)
 
         except Exception as e:
-            print(f"Error: {e}")
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class RAGQueryView(APIView):
+    parser_classes = (JSONParser,)
     """
-    RAG 시스템을 이용한 질의응답 API 뷰
+    RAG 질의응답 API
     
     Endpoints:
-        POST /rag/query/: 사용자 질문을 받아 관련 문서를 검색하고 답변 생성
+        POST /rag/query/: 사용자 질문에 대한 답변을 생성
     """
-    parser_classes = (JSONParser,)
+    def get(self, request):
+        """API 사용 방법을 반환합니다."""
+        return Response({
+            "question": "너 지금 또 감정적이야"
+        }, status=status.HTTP_200_OK)
 
     def post(self, request):
-        """
-        사용자 질문에 대한 답변을 생성합니다.
-        
-        Process:
-            1. 사용자 질문 검증
-            2. QA 체인 생성
-            3. 질문 처리 및 답변 생성
-            4. 답변과 참조 문서 반환
-        
-        Args:
-            request.data: {
-                'question': str  # 사용자 질문
-            }
-        
-        Returns:
-            Response: {
-                'answer': str,  # GPT 모델이 생성한 답변
-                'source_documents': list  # 참조한 문서 목록
-            }
-        """
+        """사용자 질문에 대한 답변을 생성합니다."""
         try:
-            # 1. 질문 검증
+            # 질문 추출
             question = request.data.get('question')
             if not question:
-                return Response({'error': '질문이 필요합니다.'}, status=status.HTTP_400_BAD_REQUEST)
+                return Response(
+                    {'error': '질문이 필요합니다.'}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
 
-            # 2. QA 체인 생성 및 질문 처리
-            print(f"받은 질문: {question}")
-            qa_chain = RAGQuery.create_qa_chain("embeddings/chroma_db")
-            result = qa_chain.invoke({"question": question})
-
-            # 3. 응답 반환
-            return Response({
-                'answer': result['answer'],
-                'source_documents': [
-                    {'content': doc.page_content, 'metadata': doc.metadata}
-                    for doc in result['source_documents']
-                ]
-            }, status=status.HTTP_200_OK)
+            # 답변 생성
+            result = RAGQuery.get_answer(question)
+            
+            # 출력값 정리 - 따옴표와 백슬래시 제거
+            cleaned_output = result.replace('"', '').replace('\\', '')
+            
+            return Response(cleaned_output, status=status.HTTP_200_OK)
 
         except Exception as e:
-            print(f"Error: {e}")
-            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
+            return Response(
+                {'error': str(e)}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
