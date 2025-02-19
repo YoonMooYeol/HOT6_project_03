@@ -172,3 +172,13 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+# Chroma DB files
+embeddings/chroma_db/
+data/temp_embeddings/
+
+# Temporary embedding files
+*.pkl
+
+# SQLite database
+*.sqlite3
