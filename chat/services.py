@@ -1,6 +1,12 @@
 # 비즈니스 로직 (MessageTranslator)
-from openai import OpenAI
 import os
+from openai import OpenAI
+from dotenv import load_dotenv
+
+load_dotenv()
+
+OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
+
 
 # class MessageTranslator:
 #     def __init__(self):
@@ -19,8 +25,7 @@ import os
 # 답변 3개 추천
 class MessageTranslator:
     def __init__(self):
-        self.client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
-
+        self.client = OpenAI(api_key=OPENAI_API_KEY)
     def get_translation_options(self, input_content):
         response = self.client.chat.completions.create(
             model="gpt-4o-mini",
