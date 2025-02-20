@@ -57,6 +57,7 @@ INSTALLED_APPS = [
     'users',
     'chat',
     'accounts',
+    'corsheaders',
 ]
 
 REST_FRAMEWORK = {
@@ -83,6 +84,7 @@ SIMPLE_JWT = {
 CORS_ALLOW_ALL_ORIGINS = True
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
@@ -167,3 +169,13 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_USER_MODEL = 'accounts.User'
+
+# 개발 환경에서는 모든 도메인 허용
+CORS_ALLOW_ALL_ORIGINS = True
+
+# 배포할 때는 특정 도메인만 허용
+# CORS_ALLOWED_ORIGINS = [
+#     "http://localhost:3000",
+#     "http://127.0.0.1:3000",
+#     "https://your-frontend-domain.com",
+# ]
