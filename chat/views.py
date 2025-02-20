@@ -111,3 +111,14 @@ def set_warm_mode(request):
         settings.save()
         
         return Response({'warm_mode': settings.warm_mode})
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_user_messages(request, user_id):
+    """특정 사용자의 메시지 목록 조회"""
+    try:
+        messages = Message.objects.filter(user_id=user_id).order_by('-created_at')
+        serializer = MessageSerializer(messages, many=True)
+        return Response(serializer.data)
+    except Exception as e:
+        return Response({'error': str(e)}, status=400)
