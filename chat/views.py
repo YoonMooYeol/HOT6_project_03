@@ -93,16 +93,23 @@ def select_translation(request, message_id):
     except Message.DoesNotExist:
         return Response({'error': '메시지를 찾을 수 없습니다'}, status=404)
 
-@api_view(['POST'])
-@permission_classes([IsAuthenticated]) # 인증된 사용자만 접근 가능
-def set_warm_mode(request):  # 함수 이름도 변경
-    """사용자의 다정모드 설정을 변경"""
-    warm_mode = request.data.get('warm_mode')  # true 또는 false
-    if warm_mode is None:  # warm_mode가 전달되지 않은 경우
-        return Response({'error': 'warm_mode 값이 필요합니다.'}, status=400)
-    
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
+def set_warm_mode(request):
+    """사용자의 다정모드 설정을 조회하거나 변경"""
     settings, _ = UserSettings.objects.get_or_create(user=request.user)
-    settings.warm_mode = warm_mode
-    settings.save()
     
-    return Response({'warm_mode': settings.warm_mode})
+    if request.method == 'GET':
+        # 현재 다정모드 상태 조회
+        return Response({'warm_mode': settings.warm_mode})
+    
+    elif request.method == 'POST':
+        # 다정모드 상태 변경
+        warm_mode = request.data.get('warm_mode')
+        if warm_mode is None:
+            return Response({'error': 'warm_mode 값이 필요합니다.'}, status=400)
+        
+        settings.warm_mode = warm_mode
+        settings.save()
+        
+        return Response({'warm_mode': settings.warm_mode})
