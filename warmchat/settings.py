@@ -56,13 +56,28 @@ INSTALLED_APPS = [
     # 로컬 앱
     'users',
     'chat',
+    'accounts',
 ]
 
 REST_FRAMEWORK = {
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema', # API 문서 자동 생성
     'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend'], # 필터 기능 활성화
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination', # 페이지네이션 기능 활성화
-    'PAGE_SIZE': 10 # 한 페이지에 표시할 항목 수
+    'PAGE_SIZE': 10, # 한 페이지에 표시할 항목 수
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ), # JWT 인증
+}
+
+# JWT 설정
+from datetime import timedelta
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(hours=48), # 48시간
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=14), # 14일
+    'ROTATE_REFRESH_TOKENS': False,
+    'ALGORITHM': 'HS256',
+    'SIGNING_KEY': SECRET_KEY,
+    'AUTH_HEADER_TYPES': ('Bearer',),
 }
 
 CORS_ALLOW_ALL_ORIGINS = True
@@ -150,3 +165,5 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+AUTH_USER_MODEL = 'accounts.User'

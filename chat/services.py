@@ -32,20 +32,33 @@ class MessageTranslator:
             messages=[
                 {
                     "role": "system", 
-                    "content": "당신은 연인 간의 대화를 더 부드럽고 감성적으로 변환하는 전문가입니다."
+                    "content": "당신은 연인 간의 대화를 더 다정하고 따뜻한 말투로 변환하는 번역기입니다. 부연설명 없이 변환된 메시지만 출력해주세요."
                 },
                 {
                     "role": "user", 
-                    "content": f"다음 메시지를 더 다정하게 표현해주세요: {input_content}"
+                    "content": f"다음 메시지를 더 다정하게 변환해주세요: {input_content}"
                 }
             ],
             temperature=0.7,  # 다양성을 위해 temperature 설정
             n=3  # 3개의 서로 다른 응답 생성
         )
         
-        # 3개의 응답을 리스트로 반환
-        return [choice.message.content for choice in response.choices]
+        ## 3개의 응답을 리스트로 반환
+        # return [choice.message.content for choice in response.choices]
+        # # 응답에서 따옴표 제거 후 리스트로 반환
+        # translations = response.choices[0].message.content.strip().split('\n')
+        # cleaned_translations = [t.strip().strip('"') for t in translations]  # 앞뒤 공백과 따옴표 제거
+        
+        # return cleaned_translations
 
+        # 3개의 응답을 리스트로 변환
+        translations = [
+            choice.message.content.strip().strip('"') 
+            for choice in response.choices
+        ]
+        
+        return translations
+    
 ## API 없을 때
 # class MessageTranslator:
 #     def __init__(self):
