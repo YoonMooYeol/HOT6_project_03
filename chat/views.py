@@ -41,32 +41,33 @@ def json_drf(request):
     
     elif request.method == 'POST':
         input_content = request.data.get('input_content')
-        # superuser 가져오기 (임시방편)
-        admin_user = User.objects.first()  # 첫 번째 사용자(superuser) 사용
         
-        # 사용자의 현재 다정모드 설정 확인
-        # settings, _ = UserSettings.objects.get_or_create(user=request.user) # 나중에 사용자 정보 추가 시 사용
-        settings, _ = UserSettings.objects.get_or_create(user=admin_user) # 임시방편***
+        # superuser 확인
+        admin_user = User.objects.first()
+        if not admin_user:
+            return Response(
+                {'error': 'No user found. Please create a superuser first.'}, 
+                status=400
+            )
+        
+        # 나머지 로직은 그대로 유지
+        settings, _ = UserSettings.objects.get_or_create(user=admin_user)
         warm_mode = settings.warm_mode
         
         if warm_mode:
-            # 다정모드가 활성화된 경우
             translator = MessageTranslator()
             translation_options = translator.get_translation_options(input_content)
-            translated_content = '\n'.join(translation_options)  # 3개의 옵션을 줄바꿈으로 구분
+            translated_content = '\n'.join(translation_options)
             
             message = Message.objects.create(
-                # user=request.user, # 나중에 사용자 정보 추가 시 사용
-                user=admin_user, # 임시방편***
+                user=admin_user,
                 input_content=input_content,
                 translated_content=translated_content,
                 warm_mode=True
             )
         else:
-            # 다정모드가 비활성화된 경우
             message = Message.objects.create(
-                # user=request.user, # 나중에 사용자 정보 추가 시 사용
-                user=admin_user, # 임시방편***
+                user=admin_user,
                 input_content=input_content,
                 output_content=input_content,  # 입력을 그대로 출력에 저장
                 warm_mode=False
