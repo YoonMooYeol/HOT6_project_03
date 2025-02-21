@@ -17,21 +17,36 @@ class UserSettings(models.Model):
     def __str__(self):
         return f"{self.user.username}'s settings"
 
+class ChatRoom(models.Model):
+    name = models.CharField(max_length=100, default="기본 채팅방")
+    participants = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name='chat_rooms')
+    warm_mode = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    @classmethod
+    def get_default_room(cls, user):
+        """기본 채팅방 반환 (없으면 생성)"""
+        room, created = cls.objects.get_or_create(name="기본 채팅방")
+        if created:
+            room.participants.add(user)  # 새로 생성된 경우 현재 사용자를 참여자로 추가
+        return room
+
+    def get_participants(self):
+        return self.participants.all()  # 특정 채팅방의 참가자 목록 조회를 위한 참가자 목록 반환
+
 class Message(models.Model):
-    id = models.AutoField(primary_key=True)
+    chat_room = models.ForeignKey(ChatRoom, on_delete=models.CASCADE, related_name='messages')
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     input_content = models.TextField()
-    output_content = models.TextField(blank=True)  # 선택된 답변
-    # translated_content = models.TextField(blank=True)  # 3개의 답변 후보
-    translated_content = models.JSONField(null=True, blank=True)  # TextField에서 JSONField로 변경
-    warm_mode = models.BooleanField(default=False)  # 다정모드 활성화 여부
+    output_content = models.TextField(blank=True)
+    translated_content = models.JSONField(null=True, blank=True)
+    warm_mode = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        db_table = 'messages'
         ordering = ['-created_at']
 
     def __str__(self):
         return f"{self.user.username}: {self.input_content[:50]}"
-    
