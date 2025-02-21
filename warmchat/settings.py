@@ -57,6 +57,7 @@ INSTALLED_APPS = [
     'users',
     'chat',
     'accounts',
+    'rag',
 ]
 
 REST_FRAMEWORK = {
