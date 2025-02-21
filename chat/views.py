@@ -94,26 +94,6 @@ def select_translation(request, message_id):
     except Message.DoesNotExist:
         return Response({'error': '메시지를 찾을 수 없습니다'}, status=404)
 
-@api_view(['GET', 'POST'])
-@permission_classes([IsAuthenticated])
-def set_warm_mode(request):
-    """사용자의 다정모드 설정을 조회하거나 변경"""
-    settings, _ = UserSettings.objects.get_or_create(user=request.user)
-    
-    if request.method == 'GET':
-        # 현재 다정모드 상태 조회
-        return Response({'warm_mode': settings.warm_mode})
-    
-    elif request.method == 'POST':
-        # 다정모드 상태 변경
-        warm_mode = request.data.get('warm_mode')
-        if warm_mode is None:
-            return Response({'error': 'warm_mode 값이 필요합니다.'}, status=400)
-        
-        settings.warm_mode = warm_mode
-        settings.save()
-        
-        return Response({'warm_mode': settings.warm_mode})
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -126,7 +106,7 @@ def get_user_messages(request, user_id):
     except Exception as e:
         return Response({'error': str(e)}, status=400)
 
-@api_view(['POST'])
+@api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])
 def set_chat_room_warm_mode(request, room_id):
     """채팅방의 다정모드 설정"""
@@ -134,12 +114,21 @@ def set_chat_room_warm_mode(request, room_id):
         chat_room = ChatRoom.objects.get(id=room_id)
     except ChatRoom.DoesNotExist:
         return Response({'error': '채팅방을 찾을 수 없습니다.'}, status=404)
+    
+    if request.method == 'GET':
+        # 현재 다정모드 상태 조회
+        return Response({'warm_mode': chat_room.warm_mode})
 
-    # 다정모드 토글
-    chat_room.warm_mode = not chat_room.warm_mode
-    chat_room.save()
-
-    return Response({'warm_mode': chat_room.warm_mode})
+    elif request.method == 'POST':
+        # 다정모드 상태 변경
+        warm_mode = request.data.get('warm_mode')
+        if warm_mode is None:
+            return Response({'error': 'warm_mode 값이 필요합니다.'}, status=400)
+        
+        chat_room.warm_mode = warm_mode
+        chat_room.save()
+        
+        return Response({'warm_mode': chat_room.warm_mode})
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
