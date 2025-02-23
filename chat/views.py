@@ -53,14 +53,15 @@ def json_drf(request):
         
         # 다정모드 적용
         if chat_room.warm_mode:
-            translator = MessageTranslator()
-            translation_options = translator.get_translation_options(input_content)
+            translator = MessageTranslator(input_content)
+            translator = translator.options
+
             
             message = Message.objects.create(
                 user=request.user,
                 chat_room=chat_room,  # 기본 채팅방 사용
                 input_content=input_content,
-                translated_content=translation_options,
+                translated_content=translator,
                 warm_mode=True
             )
         else:

@@ -1,6 +1,6 @@
 # 비즈니스 로직 (MessageTranslator)
 import os
-from openai import OpenAI
+from rag.method import RAGQuery
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -24,41 +24,17 @@ OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 
 # 답변 3개 추천
 class MessageTranslator:
-    def __init__(self):
-        self.client = OpenAI(api_key=OPENAI_API_KEY)
-    def get_translation_options(self, input_content):
-        response = self.client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {
-                    "role": "system", 
-                    "content": "당신은 연인 간의 대화를 더 다정하고 따뜻한 말투로 변환하는 번역기입니다. 부연설명 없이 변환된 메시지만 출력해주세요."
-                },
-                {
-                    "role": "user", 
-                    "content": f"다음 메시지를 더 다정하게 변환해주세요: {input_content}"
-                }
-            ],
-            temperature=0.7,  # 다양성을 위해 temperature 설정
-            n=3  # 3개의 서로 다른 응답 생성
-        )
-        
-        ## 3개의 응답을 리스트로 반환
-        # return [choice.message.content for choice in response.choices]
-        # # 응답에서 따옴표 제거 후 리스트로 반환
-        # translations = response.choices[0].message.content.strip().split('\n')
-        # cleaned_translations = [t.strip().strip('"') for t in translations]  # 앞뒤 공백과 따옴표 제거
-        
-        # return cleaned_translations
-
+    def __init__(self, input_content):
+        # 기존 get_translation_options 기능을 유지하되, RAGQuery.get_answer를 사용하여 3개의 응답을 생성하고
+        # 결과를 self.options 에 저장합니다.
+        self.options = []
+        answer = RAGQuery.get_answer(input_content)
         # 3개의 응답을 리스트로 변환
-        translations = [
-            choice.message.content.strip().strip('"') 
-            for choice in response.choices
-        ]
-        
-        return translations
-    
+        self.options = answer.split('|')
+        # 리스트 내 문자열 앞뒤 공백 제거
+        self.options = [option.strip() for option in self.options]
+        print(self.options)
+
 ## API 없을 때
 # class MessageTranslator:
 #     def __init__(self):

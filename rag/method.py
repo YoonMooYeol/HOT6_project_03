@@ -292,7 +292,8 @@ class RAGQuery:
         
         llm = ChatOpenAI(
             model="gpt-4o-mini",
-            temperature=1.1
+            temperature=1.1,
+            n=3
         )
 
         # 프롬프트 템플릿
@@ -315,7 +316,7 @@ class RAGQuery:
             6. Don't use formal speech too stiffly, but make it cute and playful.
 
 Read the user's message and rephrase it according to the specified style in the following format:  
-Response format: "User's message" : Rephrased message1 / Rephrased message2 / Rephrased message3
+Response format: Rephrased message1 | Rephrased message2 | Rephrased message3
 """
         
         prompt = ChatPromptTemplate.from_template(template)
