@@ -391,21 +391,23 @@ class RAGQuery:
         )
 
         # 프롬프트 템플릿
-        template = """Given the following context and a harsh message from your partner, rephrase the message into a gentle, warm, and loving tone.
+        template = """Given the overall conversation context and a harsh message from your partner, rephrase the message into a gentle, warm, and loving tone that fits naturally into your ongoing conversation.
         
-        Context: {context}
+        Overall Conversation Context:
+        {conversation_history}
         
-        Partner's harsh message: {question}
+        Partner's harsh message:
+        {question}
         
         Instructions:
-          1. Rephrase the partner's message while preserving its original meaning, but soften it into a caring and respectful tone.
-          2. Ensure the rephrasing feels natural for a loving conversation between partners.
-          3. Provide three alternative rephrasings separated by slashes.
-          4. Each alternative should be concise (aim for around 15-30 words) and avoid overly formal language.
+          1. Carefully analyze the overall conversation context to grasp the emotional cues and dialogue flow.
+          2. Rephrase the partner's message, keeping its original meaning but softening the tone into a caring and respectful manner.
+          3. Provide three alternative rephrasings separated by pipes (|).
+          4. Each alternative should be concise (aim for around 15-30 words) and crafted for a loving conversation.
           5. Always respond in Korean.
         
         Response Format:
-        "Partner's Message": Alternative1 / Alternative2 / Alternative3
+        Alternative1 | Alternative2 | Alternative3
         """
         
         prompt = ChatPromptTemplate.from_template(template)
@@ -415,15 +417,18 @@ class RAGQuery:
 
     @staticmethod
     def get_answer(question: str):
-        """DB_DIR 파라미터 제거"""
+        """Uses the conversation history from the retrieval to construct the prompt input.
+        
+        Retrieves documents, compiles the conversation history, and invokes the LLM with the updated keys.
+        """
         retriever, chain = RAGQuery.create_qa_chain()
         retrieved_docs = retriever.invoke(question)
-        context = "\n".join([doc.page_content for doc in retrieved_docs])
-        print(f"context: {context}")
+        # 'retrieved_docs' are joined to form the overall conversation context.
+        conversation_history = "\n".join([doc.page_content for doc in retrieved_docs])
+        print(f"conversation_history: {conversation_history}")
         result = chain.invoke({
-            "context": context,
+            "conversation_history": conversation_history,
             "question": question
         })
-        
         return result.content
 
