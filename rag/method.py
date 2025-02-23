@@ -309,7 +309,7 @@ class RAGQuery:
                Rephrase my words in a warm and considerate manner to convey emotions and concerns respectfully. 
                Keep responses concise and focused on delivering my intended message.
             2. (Most Important) I am not talking to an AI; I am conversing with my partner. 
-               Translate my words into a response of 15 characters or fewer that aligns with the specified tone.
+               Translate my words into a response of 30 characters or fewer that aligns with the specified tone.
             3. Speak in the following manner: gentle, warm, and considerate.
             4. always speak korean
             5. provide 3 examples of messages that can be used to respond to the user's message

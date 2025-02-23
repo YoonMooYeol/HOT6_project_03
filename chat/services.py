@@ -35,6 +35,24 @@ class MessageTranslator:
         self.options = [option.strip() for option in self.options]
         print(self.options)
 
+    def get_contextual_response(self, current_input):
+        """
+        데이터베이스에 저장된 모든 채팅 메시지를 가져와 대화의 흐름을 형성한 후,
+        현재 입력(current_input)과 함께 RAGQuery.get_answer를 호출하여 답변을 생성합니다.
+        예상 응답 형식: {"text": "...", "emotion": "..."} 등 (RAGQuery의 반환값에 따라 조정 필요)
+        """
+        from chat.models import ChatMessage  # ChatMessage 모델이 존재한다고 가정
+
+        # 모든 채팅 메시지를 시간순으로 조회
+        messages = ChatMessage.objects.all().order_by('timestamp')
+        # 각 메시지의 발신자와 내용을 활용하여 대화 맥락을 구성 (필드명에 맞게 수정하세요)
+        conversation = "\n".join([f"{msg.sender}: {msg.content}" for msg in messages])
+
+        # 전체 프롬프트 구성: 기존 대화 맥락 + 현재 사용자 입력
+        full_prompt = f"대화 맥락:\n{conversation}\n현재 사용자: {current_input}\n적절한 답변을 생성해줘."
+        contextual_answer = RAGQuery.get_answer(full_prompt)
+        return contextual_answer
+
 ## API 없을 때
 # class MessageTranslator:
 #     def __init__(self):
