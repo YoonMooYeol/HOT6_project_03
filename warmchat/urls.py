@@ -21,8 +21,9 @@ from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/v1/chat/', include('chat.urls')),
-    
+    path('api/v1/audio/', include('audio.urls')),
     path('api/auth/', include('accounts.urls')),
+    
     
     # API 문서
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),

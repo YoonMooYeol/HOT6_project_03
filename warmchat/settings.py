@@ -58,6 +58,7 @@ INSTALLED_APPS = [
     'chat',
     'accounts',
     'rag',
+    'audio',
 ]
 
 REST_FRAMEWORK = {
