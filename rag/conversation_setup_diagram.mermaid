@@ -1,0 +1,13 @@
+flowchart TD
+    A[클라이언트: POST 요청 (대화 JSON 데이터)] --> B[RAGSetupView: 데이터 타입 확인]
+    B --> C["대화 JSON 데이터 감지<br/>(info & utterances 존재)"]
+    C --> D[RAGProcessor.initialize_chroma_db()<br/>(DB 초기화)]
+    D --> E[RAGProcessor.process_conversation_json() 호출]
+    E --> F["대화 info와 각 utterance 결합<br/>Document 생성"]
+    F --> G["중복 체크: 기존 ID (existing_ids)와 비교"]
+    G --> H[Document 리스트 (new_docs) 생성]
+    H --> I[RAGProcessor.split_documents()<br/>(문서 청크 분할)]
+    I --> J[RAGProcessor.prepare_data_for_chroma()<br/>(texts, metadatas, ids 준비)]
+    J --> K[임베딩 생성<br/>(create_conversation_embeddings)]
+    K --> L[Chroma DB 업데이트<br/>(update_chroma_db)]
+    L --> M[처리 완료: 결과 및 진행률 리턴 (완료: 100%)] 
