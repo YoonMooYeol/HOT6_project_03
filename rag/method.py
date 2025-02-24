@@ -14,6 +14,7 @@ from django.conf import settings
 from tqdm import tqdm
 
 from dotenv import load_dotenv
+from django.apps import apps
 
 load_dotenv()
 
@@ -422,11 +423,9 @@ class RAGQuery:
     @staticmethod
     def get_answer(question: str):
         # chat_message 테이블(모델)에서 대화 히스토리 가져오기 (ChatMessage 모델이 존재해야 합니다)
-        from chat.models import ChatMessage
-
-        # 시간순으로 정렬된 전체 채팅 메시지로 대화 맥락 구성
-        messages = ChatMessage.objects.all().order_by('timestamp')
-        chat_history = "\n".join([f"{msg.sender}: {msg.content}" for msg in messages])
+        ChatMessage = apps.get_model('chat', 'Message')
+        messages = ChatMessage.objects.all().order_by('created_at')
+        chat_history = "\n".join([f"{msg.user}: {msg.input_content}" for msg in messages])
 
         # 벡터스토어에서 추가적인 문서(대화 관련 문맥) 가져오기
         retriever, chain = RAGQuery.create_qa_chain()
