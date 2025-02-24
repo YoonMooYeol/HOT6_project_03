@@ -390,21 +390,25 @@ class RAGQuery:
             temperature=1.1
         )
 
-        # 프롬프트 템플릿
-        template = """Given the overall conversation context and a harsh message from your partner, rephrase the message into a gentle, warm, and loving tone that fits naturally into your ongoing conversation.
+        # 프롬프트 템플릿 수정: 채팅 히스토리와 리트리브된 문서를 별도의 키로 전달
+        template = """Given the chat history and the retrieved context, rephrase the partner's harsh message into a gentle, warm, and loving tone that fits naturally into your ongoing conversation.
         
-        Overall Conversation Context:
-        {conversation_history}
+        Chat History:
+        {chat_history}
+        
+        Retrieved Context:
+        {retrieved_context}
         
         Partner's harsh message:
         {question}
         
         Instructions:
-          1. Carefully analyze the overall conversation context to grasp the emotional cues and dialogue flow.
-          2. Rephrase the partner's message, keeping its original meaning but softening the tone into a caring and respectful manner.
-          3. Provide three alternative rephrasings separated by pipes (|).
-          4. Each alternative should be concise (aim for around 15-30 words) and crafted for a loving conversation.
-          5. Always respond in Korean.
+          1. Carefully analyze the chat history to grasp the emotional cues.
+          2. Incorporate relevant context from the retrieved documents.
+          3. Rephrase the partner's message, keeping its original meaning while softening the tone into a caring and respectful manner.
+          4. Provide three alternative rephrasings separated by pipes (|).
+          5. Each alternative should be concise (aim for around 15-30 words) and crafted for a loving conversation.
+          6. Always respond in Korean.
         
         Response Format:
         Alternative1 | Alternative2 | Alternative3
@@ -417,17 +421,23 @@ class RAGQuery:
 
     @staticmethod
     def get_answer(question: str):
-        """Uses the conversation history from the retrieval to construct the prompt input.
-        
-        Retrieves documents, compiles the conversation history, and invokes the LLM with the updated keys.
-        """
+        # chat_message 테이블(모델)에서 대화 히스토리 가져오기 (ChatMessage 모델이 존재해야 합니다)
+        from chat.models import ChatMessage
+
+        # 시간순으로 정렬된 전체 채팅 메시지로 대화 맥락 구성
+        messages = ChatMessage.objects.all().order_by('timestamp')
+        chat_history = "\n".join([f"{msg.sender}: {msg.content}" for msg in messages])
+
+        # 벡터스토어에서 추가적인 문서(대화 관련 문맥) 가져오기
         retriever, chain = RAGQuery.create_qa_chain()
         retrieved_docs = retriever.invoke(question)
-        # 'retrieved_docs' are joined to form the overall conversation context.
-        conversation_history = "\n".join([doc.page_content for doc in retrieved_docs])
-        print(f"conversation_history: {conversation_history}")
+        retrieved_context = "\n".join([doc.page_content for doc in retrieved_docs])
+
+        print(f"Chat History: {chat_history}")
+        print(f"Retrieved Context: {retrieved_context}")
         result = chain.invoke({
-            "conversation_history": conversation_history,
+            "chat_history": chat_history,
+            "retrieved_context": retrieved_context,
             "question": question
         })
         return result.content
