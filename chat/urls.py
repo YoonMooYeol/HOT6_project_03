@@ -8,4 +8,5 @@ urlpatterns = [
     # path('set-warm-mode/', views.set_warm_mode, name='set_warm_mode'),
     path('rooms/<int:room_id>/warm-mode/', views.set_chat_room_warm_mode, name='set_chat_room_warm_mode'),
     path('rooms/<int:room_id>/', views.get_chat_room_details, name='chat_room'),
+    path('translate-language/', views.translate_language, name='translate_language'),
 ]

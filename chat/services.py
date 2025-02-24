@@ -2,25 +2,11 @@
 import os
 from rag.method import RAGQuery
 from dotenv import load_dotenv
+from openai import OpenAI
 
 load_dotenv()
 
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
-
-
-# class MessageTranslator:
-#     def __init__(self):
-#         self.client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
-
-#     def translate_message(self, input_content):
-#         response = self.client.chat.completions.create(
-#             model="gpt-4o-mini",
-#             messages=[
-#                 {"role": "system", "content": "당신은 연인 간의 대화를 더 부드럽고 감성적으로 변환하는 전문가입니다."},
-#                 {"role": "user", "content": f"다음 메시지를 더 다정하고 감성적인 표현으로 변환해주세요: {input_content}"}
-#             ]
-#         )
-#         return response.choices[0].message.content
 
 # 답변 3개 추천
 class MessageTranslator:
@@ -50,18 +36,30 @@ class MessageTranslator:
 
         # 전체 프롬프트 구성: 기존 대화 맥락 + 현재 사용자 입력
         full_prompt = f"대화 맥락:\n{conversation}\n현재 사용자: {current_input}\n적절한 답변을 생성해줘."
+        print(full_prompt)
         contextual_answer = RAGQuery.get_answer(full_prompt)
         return contextual_answer
 
-## API 없을 때
-# class MessageTranslator:
-#     def __init__(self):
-#         self.client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
+class LanguageTranslator:
+    def __init__(self):
+        self.client = OpenAI(api_key=OPENAI_API_KEY)
 
-#     def translate_message(self, input_content):
-#         # 테스트용 임시 응답
-#         return f"AI 테스트 응답: '{input_content}'를 더 부드럽게 표현하면 좋겠어요."
-        
-#         # OpenAI API 호출 코드는 주석 처리
-#         # response = self.client.chat.completions.create(...)
-#         # return response.choices[0].message.content
+    def translate_message(self, output_content, target_language):
+        # 언어에 따라 프롬프트를 다르게 설정
+        if target_language == 'ko':
+            prompt = f"다음 메시지를 한국어로 번역해 주세요. 다른 말을 덧붙이지 말고 번역만 해주세요: {output_content}"
+        elif target_language == 'en':
+            prompt = f"Translate the following message to English. Do not add any other words. Just translate: {output_content}"
+        elif target_language == 'ja':
+            prompt = f"次のメッセージを日本語に翻訳してください. 他の言葉を追加しないでください. 翻訳のみしてください: {output_content}"
+        else:
+            return "지원하지 않는 언어입니다."
+
+        response = self.client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": "당신은 번역 전문가입니다."},
+                {"role": "user", "content": prompt}
+            ]
+        )
+        return response.choices[0].message.content

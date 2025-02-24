@@ -4,36 +4,9 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from .serializers import MessageSerializer
 from .models import Message, UserSettings, ChatRoom
-from .services import MessageTranslator
+from .services import MessageTranslator, LanguageTranslator
 
 User = get_user_model()
-
-# @api_view(['GET', 'POST'])
-# def json_drf(request):
-#     if request.method == 'GET':
-#         messages = Message.objects.all()
-#         serializer = MessageSerializer(messages, many=True)
-#         return Response(serializer.data)
-
-#     elif request.method == 'POST':
-#         translator = MessageTranslator()
-#         input_content = request.data.get('input_content')
-        
-#         # AI로 변환된 텍스트 얻기
-#         translated_content = translator.translate_message(input_content)
-        
-#         # superuser 가져오기 (임시방편)
-#         admin_user = User.objects.first()  # 첫 번째 사용자(superuser) 사용
-        
-#         # 메시지 저장
-#         message = Message.objects.create(
-#             user=admin_user,  # 임시방편으로 admin_user로 user 정보 추가
-#             input_content=input_content,
-#             translated_content=translated_content
-#         )
-        
-#         serializer = MessageSerializer(message)
-#         return Response(serializer.data)
 
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])
@@ -149,3 +122,31 @@ def get_chat_room_details(request, room_id):
         'participants': participant_data,
         'warm_mode': chat_room.warm_mode,
     })
+
+@api_view(['POST', 'GET'])
+@permission_classes([IsAuthenticated])  # 인증된 사용자만 접근 가능
+def translate_language(request):
+    """메시지 언어를 번역하는 API"""
+    if request.method == 'POST':
+        message_id = request.data.get('message_id')  # 메시지 ID를 요청에서 가져옵니다.
+        target_language = request.data.get('target_language')  # 'ko', 'en', 'ja' 등
+
+    elif request.method == 'GET':
+        message_id = request.query_params.get('message_id')  # URL 파라미터에서 메시지 ID 가져오기
+        target_language = request.query_params.get('target_language')  # URL 파라미터에서 언어 가져오기
+
+    try:
+        message = Message.objects.get(id=message_id)  # 메시지 ID로 메시지 조회
+    except Message.DoesNotExist:
+        return Response({'error': '메시지를 찾을 수 없습니다.'}, status=404)
+
+    output_content = message.output_content  # 메시지의 내용을 가져옵니다.
+
+    translator = LanguageTranslator()
+    translated_text = translator.translate_message(output_content, target_language)
+
+    # 번역된 내용을 lang_translated_content 필드에 저장
+    message.lang_translated_content = translated_text
+    message.save()
+
+    return Response({'translated_text': translated_text})
