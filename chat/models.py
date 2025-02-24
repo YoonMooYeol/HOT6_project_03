@@ -41,7 +41,7 @@ class Message(models.Model):
     input_content = models.TextField()
     output_content = models.TextField(blank=True)
     translated_content = models.JSONField(null=True, blank=True)  # 다정모드 변환 내용
-    lang_translated_content = models.JSONField(null=True, blank=True)  # 언어 번역된 내용
+    # lang_translated_content = models.JSONField(null=True, blank=True)  # 언어 번역된 내용
     warm_mode = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
