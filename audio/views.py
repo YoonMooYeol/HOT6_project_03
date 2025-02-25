@@ -6,6 +6,8 @@ from rest_framework.response import Response
 from rest_framework import status
 import os
 from tempfile import NamedTemporaryFile
+from django.http import HttpResponse
+from playsound import playsound
 
 load_dotenv()
 
@@ -27,9 +29,20 @@ class SpeechToTextView(APIView):
             output_format="mp3_44100_128",
         )
 
-        play(audio)
+        with NamedTemporaryFile(delete=False, suffix=".mp3") as temp_file:
+            for chunk in audio:
+                temp_file.write(chunk)
+            temp_file_path = temp_file.name
+        
+        try:
+            playsound(temp_file_path)
+        except Exception as e:
+            os.remove(temp_file_path)
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+        os.remove(temp_file_path)
 
-        return Response({"message": "Audio generated successfully"}, status=status.HTTP_200_OK)
+        return Response({"message": "Audio generated and played successfully"}, status=status.HTTP_200_OK)
 
 
 class CloneVoiceView(APIView):
@@ -99,5 +112,35 @@ class TextToSpeechWithClonedVoiceView(APIView):
         # 실제 서버에서는 audio 파일을 반환하거나 저장하는 방식으로 처리할 수 있습니다.
         play(audio)
         return Response({"message": "Audio generated successfully"}, status=status.HTTP_200_OK)
+
+
+class TextToSpeechGttsView(APIView):
+    """
+    gTTS를 사용하여 텍스트를 음성으로 변환하는 API.
+    예상 요청 (application/json):
+      {
+          "text": "변환할 텍스트",
+          "lang": "ko"  # 옵션: 변환할 언어 (기본값은 한국어)
+      }
+    """
+    def post(self, request):
+        text = request.data.get("text")
+        lang = request.data.get("lang", "ko")  # 기본 언어: 한국어
+        if not text:
+            return Response({"error": "텍스트가 필요합니다."}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            # gTTS를 사용하여 텍스트 음성 변환
+            tts = gTTS(text=text, lang=lang)
+            with NamedTemporaryFile(delete=False, suffix=".mp3") as temp_file:
+                tts.write_to_fp(temp_file)
+                temp_file_path = temp_file.name
+            with open(temp_file_path, "rb") as f:
+                audio_data = f.read()
+            os.remove(temp_file_path)
+            response = HttpResponse(audio_data, content_type="audio/mpeg")
+            response["Content-Disposition"] = 'attachment; filename="speech.mp3"'
+            return response
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
     
