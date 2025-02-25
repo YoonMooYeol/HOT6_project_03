@@ -441,4 +441,82 @@ class RAGQuery:
             "question": question
         })
         return result.content
+    
+    @staticmethod
+    def create_qa_chain_with_emotion():
+        """공유된 DB_DIR을 사용하여 QA 체인 생성"""
+        db_dir = RAGProcessor.DB_DIR
+        vectorstore = Chroma(
+            persist_directory=db_dir,
+            embedding_function=OpenAIEmbeddings(
+                model="text-embedding-3-small"
+            ),
+            collection_name="korean_dialogue"
+        )
+        
+        # 필터 제거하고 테스트
+        retriever = vectorstore.as_retriever(
+            search_kwargs={"k": 10},
+        )
+        
+        llm = ChatOpenAI(
+            model="gpt-4o-mini",
+            temperature=0.7
+        )
+
+        # 프롬프트 템플릿 수정: 채팅 히스토리와 리트리브된 문서를 별도의 키로 전달
+        template = """리트리브된 문장 예시를 참고하여 입력된 메시지에 대한 감정을 분석하고, 해당메세지의 감정을 생성하세요.
+        
+        리트리브된 문서:
+        {retrieved_context}
+        
+        입력된 메시지:
+        {question}
+        
+        감정:
+        """
+        
+        prompt = ChatPromptTemplate.from_template(template)
+        chain = prompt | llm
+        
+        return retriever, chain
+
+    @staticmethod
+    def get_answer(question: str):
+        # chat_message 테이블(모델)에서 대화 히스토리 가져오기
+        from chat.models import Message
+
+        # 시간순으로 정렬된 전체 채팅 메시지로 대화 맥락 구성
+        messages = Message.objects.all().order_by('created_at')
+        chat_history = "\n".join([f"{msg.user}: {msg.input_content}" for msg in messages])
+
+        # 벡터스토어에서 추가적인 문서(대화 관련 문맥) 가져오기
+        retriever, chain = RAGQuery.create_qa_chain()
+        retrieved_docs = retriever.invoke(question)
+        retrieved_context = "\n".join([doc.page_content for doc in retrieved_docs])
+
+        print(f"Chat History: {chat_history}")
+        print(f"Retrieved Context: {retrieved_context}")
+        result = chain.invoke({
+            "chat_history": chat_history,
+            "retrieved_context": retrieved_context,
+            "question": question
+        })
+        return result.content
+        
+        
+    @staticmethod
+    def get_answer_with_emotion(question: str):
+        # chat_message 테이블(모델)에서 대화 히스토리 가져오기
+        from chat.models import Message
+
+        retriever, chain = RAGQuery.create_qa_chain_with_emotion()
+        retrieved_docs = retriever.invoke(question)
+        retrieved_context = "\n".join([doc.page_content for doc in retrieved_docs])
+
+        result = chain.invoke({
+            "question": question,
+            "retrieved_context": retrieved_context
+        })
+        return result.content
 

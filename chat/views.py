@@ -243,3 +243,11 @@ def translate_language(request):
     translated_text = translator.translate_message(input_content, target_language)
 
     return Response({'translated_text': translated_text})
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def add_emotion(request):
+    """메시지에 감정을 추가하는 API"""
+    message_id = request.data.get('message_id')
+    emotion = request.data.get('emotion')
+    

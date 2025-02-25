@@ -51,3 +51,15 @@ class Message(models.Model):
 
     def __str__(self):
         return f"{self.user.username}: {self.input_content[:50]}"
+    
+class message_emotion(models.Model):
+    # 메시지 객체와 연결된 감정 모델
+    message = models.ForeignKey(Message, on_delete=models.CASCADE, related_name='emotions')
+    emotion = models.CharField(max_length=100)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    def __str__(self):
+        return f"{self.message.user.username}: {self.emotion}"
+    
+    

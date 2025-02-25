@@ -291,3 +291,21 @@ class RAGBulkJsonSetupView(APIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
+class RAGEmotionQueryView(APIView):
+    parser_classes = (JSONParser,)
+    
+    def post(self, request):
+        """사용자 질문에 대한 답변을 생성합니다."""
+        try:
+            question = request.data.get('question')
+            if not question:
+                return Response(
+                    {'error': '질문이 필요합니다.'}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            result = RAGQuery.get_answer_with_emotion(question)
+            return Response(result, status=status.HTTP_200_OK)
+        
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
