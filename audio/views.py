@@ -116,7 +116,7 @@ class TextToSpeechWithClonedVoiceView(APIView):
 
 class TextToSpeechGttsView(APIView):
     """
-    gTTS를 사용하여 텍스트를 음성으로 변환하는 API.
+    텍스트를 음성으로 변환하는 API.
     예상 요청 (application/json):
       {
           "text": "변환할 텍스트",
