@@ -12,6 +12,10 @@ class RegisterSerializer(serializers.ModelSerializer):
         fields = ('username', 'password', 'password2', 'name', 'gender')
 
     def validate(self, attrs):
+        User = get_user_model()
+        if User.objects.filter(username=attrs['username']).exists():
+            raise serializers.ValidationError({"username": "이미 존재하는 아이디입니다."})
+
         if attrs['password'] != attrs['password2']:
             raise serializers.ValidationError({"password": "비밀번호가 일치하지 않습니다."})
         return attrs
