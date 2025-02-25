@@ -3,10 +3,12 @@ import os
 from rag.method import RAGQuery
 from dotenv import load_dotenv
 from openai import OpenAI
+import requests  # requests 라이브러리 추가
 
 load_dotenv()
 
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
+DEEPL_API_KEY = os.getenv('DEEPL_API_KEY')  # DeepL API 키 가져오기
 
 # 답변 3개 추천
 class MessageTranslator:
@@ -35,31 +37,34 @@ class MessageTranslator:
         conversation = "\n".join([f"{msg.user}: {msg.input_content}" for msg in messages])
 
         # 전체 프롬프트 구성: 기존 대화 맥락 + 현재 사용자 입력
-        full_prompt = f"대화 맥락:\n{conversation}\n현재 사용자: {current_input}\n적절한 답변을 생성해줘."
+        full_prompt = f"대화 맥락:\n{conversation}\n현재 사용자: {current_input}\n적절한 답변을 생성해줘. 단, 답변은 current_input의 언어로 해줘."
         print(full_prompt)
         contextual_answer = RAGQuery.get_answer(full_prompt)
         return contextual_answer
 
 class LanguageTranslator:
     def __init__(self):
-        self.client = OpenAI(api_key=OPENAI_API_KEY)
+        print(DEEPL_API_KEY)
+        # OpenAI 클라이언트 제거
+        pass
 
     def translate_message(self, output_content, target_language):
         # 언어에 따라 프롬프트를 다르게 설정
-        if target_language == 'ko':
-            prompt = f"다음 메시지를 한국어로 번역해 주세요. 다른 말을 덧붙이지 말고 번역만 해주세요: {output_content}"
-        elif target_language == 'en':
-            prompt = f"Translate the following message to English. Do not add any other words. Just translate: {output_content}"
-        elif target_language == 'ja':
-            prompt = f"次のメッセージを日本語に翻訳してください. 他の言葉を追加しないでください. 翻訳のみしてください: {output_content}"
-        else:
+        if target_language not in ['ko', 'en', 'ja']:
             return "지원하지 않는 언어입니다."
 
-        response = self.client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {"role": "system", "content": "당신은 번역 전문가입니다."},
-                {"role": "user", "content": prompt}
-            ]
-        )
-        return response.choices[0].message.content
+        # DeepL API 호출을 위한 URL 및 파라미터 설정
+        url = "https://api-free.deepl.com/v2/translate"
+        params = {
+            'auth_key': DEEPL_API_KEY,
+            'text': output_content,
+            'target_lang': target_language.upper()  # DeepL API는 대문자 언어 코드를 사용
+        }
+
+        # DeepL API 호출
+        response = requests.post(url, data=params)
+
+        if response.status_code == 200:
+            return response.json()['translations'][0]['text']  # 번역된 텍스트 반환
+        else:
+            return f"번역 오류: {response.status_code} - {response.text}"

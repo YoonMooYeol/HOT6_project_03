@@ -407,8 +407,8 @@ class RAGQuery:
           2. Incorporate relevant context from the retrieved documents.
           3. Rephrase the partner's message, keeping its original meaning while softening the tone into a caring and respectful manner.
           4. Provide three alternative rephrasings separated by pipes (|).
-          5. Each alternative should be concise (aim for around 15-30 words) and crafted for a loving conversation.
-          6. Always respond in Korean.
+          5. Each alternative should be concise (aim for around 15 words) and crafted for a loving conversation.
+          6. (Important) Whatever the language of the Chat History and Retrieved Context is, always respond in the same language as the harsh message "{question}"!!
         
         Response Format:
         Alternative1 | Alternative2 | Alternative3

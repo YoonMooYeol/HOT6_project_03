@@ -58,6 +58,10 @@ def json_drf(request):
     chat_room = ChatRoom.get_default_room(request.user)
 
     if chat_room.warm_mode:
+        # # 의미 없는 입력 감지
+        # if is_meaningless_input(input_content):
+        #     return Response({'input_content': input_content})  # 입력된 내용을 그대로 반환
+        
         # 다정한 말투로 변환된 3개의 옵션 생성
         translator = MessageTranslator(input_content)
         warm_options = translator.options
